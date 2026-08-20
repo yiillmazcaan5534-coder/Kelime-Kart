@@ -4,14 +4,15 @@ import './StudySession.css'
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
 export default function StudySession({ list, onExit }) {
+  const [cards] = useState(() => list.shuffle ? [...list.words].sort(() => Math.random() - .5) : list.words)
   const [cardIndex, setCardIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const [motion, setMotion] = useState({ x: 0, y: 0, glareX: 50, glareY: 50 })
   const startPoint = useRef(null)
-  const card = list.words[cardIndex]
+  const card = cards[cardIndex]
 
   function resetCard() { setIsFlipped(false); setMotion({ x: 0, y: 0, glareX: 50, glareY: 50 }) }
-  function goToCard(direction) { setCardIndex((current) => (current + direction + list.words.length) % list.words.length); resetCard() }
+  function goToCard(direction) { setCardIndex((current) => (current + direction + cards.length) % cards.length); resetCard() }
   function onPointerDown(event) { event.currentTarget.setPointerCapture(event.pointerId); startPoint.current = { x: event.clientX, y: event.clientY } }
   function onPointerMove(event) {
     if (!startPoint.current) return
@@ -30,7 +31,7 @@ export default function StudySession({ list, onExit }) {
   }
 
   return <main className="study-shell">
-    <header className="study-topbar"><button className="study-back" onClick={onExit}>←</button><span>{list.title}</span><span className="progress">{cardIndex + 1} / {list.words.length}</span></header>
+    <header className="study-topbar"><button className="study-back" onClick={onExit}>←</button><span>{list.title}</span><span className="progress">{cardIndex + 1} / {cards.length}</span></header>
     <section className="card-stage">
       <div className="flashcard-scene">
         <button className={`flashcard ${isFlipped ? 'is-flipped' : ''}`} style={{ '--tilt-x': `${motion.x}deg`, '--tilt-y': `${motion.y}deg`, '--glare-x': `${motion.glareX}%`, '--glare-y': `${motion.glareY}%` }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} aria-label="Kartı çevirmek için dokun veya sağa sola sürükle">

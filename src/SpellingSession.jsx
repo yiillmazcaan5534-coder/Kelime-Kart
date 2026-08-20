@@ -5,7 +5,7 @@ const normalize = (value) => value.trim().toLocaleLowerCase('en-US')
 const sameLetter = (typed, expected) => normalize(typed) === normalize(expected)
 
 export default function SpellingSession({ list, onExit }) {
-  const [queue, setQueue] = useState(() => [...list.words])
+  const [queue, setQueue] = useState(() => list.shuffle ? [...list.words].sort(() => Math.random() - .5) : [...list.words])
   const [retryQueue, setRetryQueue] = useState([])
   const [phase, setPhase] = useState('prompt')
   const [answer, setAnswer] = useState('')
@@ -25,10 +25,9 @@ export default function SpellingSession({ list, onExit }) {
   function startAnswer() { clearTimer(); setPhase('answer') }
   useEffect(() => () => clearTimer(), [])
   useEffect(() => {
-    clearTimer()
-    if (phase === 'prompt') timer.current = window.setTimeout(() => setPhase('preview'), 900)
-    if (phase === 'preview') timer.current = window.setTimeout(startAnswer, 2300)
-    return clearTimer
+    if (phase === 'prompt') { clearTimer(); timer.current = window.setTimeout(() => setPhase('preview'), 900) }
+    if (phase === 'preview') { clearTimer(); timer.current = window.setTimeout(startAnswer, 2300) }
+    return phase === 'prompt' || phase === 'preview' ? clearTimer : undefined
   }, [phase, word])
   useEffect(() => { if (phase === 'answer') answerInput.current?.focus() }, [phase])
 
