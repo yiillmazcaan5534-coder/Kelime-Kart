@@ -34,7 +34,7 @@ export default function StudySession({ list, onExit }) {
     <section className="card-stage">
       <div className="flashcard-scene">
         <button className={`flashcard ${isFlipped ? 'is-flipped' : ''}`} style={{ '--tilt-x': `${motion.x}deg`, '--tilt-y': `${motion.y}deg`, '--glare-x': `${motion.glareX}%`, '--glare-y': `${motion.glareY}%` }} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} aria-label="Kartı çevirmek için dokun veya sağa sola sürükle">
-          <span className="card-face card-front"><small>İNGİLİZCE</small><strong>{card.english}</strong><i>Dokun veya kaydır</i></span>
+          <span className="card-face card-front"><small>İNGİLİZCE</small><strong>{card.english}</strong>{card.pronunciation && <b className="pronunciation">{card.pronunciation}</b>}<i>Dokun veya kaydır</i></span>
           <span className="card-face card-back"><small>TÜRKÇE</small><strong>{card.turkish}</strong><i>Tekrar kaydırarak dön</i></span>
           <span className="glare" />
         </button>
