@@ -8,12 +8,29 @@ import StudySession from './StudySession'
 import SpellingSession from './SpellingSession'
 
 const starterLists = [
-  { id: 'unit-3', title: 'Unit 3', accent: 'blue', words: [{ english: 'phone', pronunciation: 'fon', turkish: 'telefon' }, { english: 'borrow', turkish: 'ödünç almak' }] },
-  { id: 'phrases', title: 'Useful Phrases', accent: 'violet', words: [{ english: 'by the way', turkish: 'bu arada' }] },
+  { id: 'starter-core', title: 'Temel Kelimeler', accent: 'blue', words: [
+    { english: 'question', pronunciation: 'kuesçın', turkish: 'soru' },
+    { english: 'answer', pronunciation: 'ensır', turkish: 'cevap' },
+    { english: 'problem', pronunciation: 'prablım', turkish: 'sorun / problem' },
+    { english: 'idea', pronunciation: 'aydiya', turkish: 'fikir' },
+    { english: 'enough', pronunciation: 'inaf', turkish: 'yeterli' },
+    { english: 'different', pronunciation: 'difrınt', turkish: 'farklı' },
+    { english: 'important', pronunciation: 'importınt', turkish: 'önemli' },
+    { english: 'difficult', pronunciation: 'difikılt', turkish: 'zor' },
+    { english: 'easy', pronunciation: 'izi', turkish: 'kolay' },
+    { english: 'together', pronunciation: 'tıgedır', turkish: 'birlikte' },
+  ] },
 ]
 
+function loadLists() {
+  const stored = JSON.parse(localStorage.getItem('kelimekart-lists'))
+  if (!stored) return starterLists
+  const withoutOldDemos = stored.filter((list) => !['unit-3', 'phrases'].includes(list.id))
+  return withoutOldDemos.some((list) => list.id === 'starter-core') ? withoutOldDemos : [...withoutOldDemos, ...starterLists]
+}
+
 function App() {
-  const [lists, setLists] = useState(() => JSON.parse(localStorage.getItem('kelimekart-lists')) || starterLists)
+  const [lists, setLists] = useState(loadLists)
   const [activeListId, setActiveListId] = useState(null)
   const [studyMode, setStudyMode] = useState(null)
   const [isCreatingList, setIsCreatingList] = useState(false)
