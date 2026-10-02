@@ -7,6 +7,7 @@ import './StudyMode.css'
 import './CreateOptions.css'
 import StudySession from './StudySession'
 import SpellingSession from './SpellingSession'
+import { a1WordLists } from './a1WordLists'
 
 const starterLists = [
   { id: 'starter-core', title: 'Temel Kelimeler', accent: 'blue', words: [
@@ -21,13 +22,15 @@ const starterLists = [
     { english: 'easy', pronunciation: 'izi', turkish: 'kolay' },
     { english: 'together', pronunciation: 'tıgedır', turkish: 'birlikte' },
   ] },
+  ...a1WordLists,
 ]
 
 function loadLists() {
   const stored = JSON.parse(localStorage.getItem('kelimekart-lists'))
   if (!stored) return starterLists
   const withoutOldDemos = stored.filter((list) => !['unit-3', 'phrases'].includes(list.id))
-  return withoutOldDemos.some((list) => list.id === 'starter-core') ? withoutOldDemos : [...withoutOldDemos, ...starterLists]
+  const missingStarterLists = starterLists.filter((starter) => !withoutOldDemos.some((list) => list.id === starter.id))
+  return [...withoutOldDemos, ...missingStarterLists]
 }
 
 function App() {
