@@ -12,6 +12,7 @@ export default function StudySession({ list, onExit, onResult }) {
   const [motion, setMotion] = useState({ x: 0, y: 0, glareX: 50, glareY: 50 })
   const startPoint = useRef(null)
   const card = cards[cardIndex]
+  const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window
 
   function resetCard() { setIsFlipped(false); setMotion({ x: 0, y: 0, glareX: 50, glareY: 50 }) }
   function goToCard(direction) { setCardIndex((current) => (current + direction + cards.length) % cards.length); resetCard() }
@@ -22,6 +23,7 @@ export default function StudySession({ list, onExit, onResult }) {
     if (nextRetries.length) { setCards(nextRetries); setRetryCards([]); setCardIndex(0); setRound((current) => current + 1); resetCard(); return }
     setCards([])
   }
+  function speak() { if (!canSpeak) return; window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(card.english); utterance.lang = 'en-GB'; utterance.rate = .82; window.speechSynthesis.speak(utterance) }
   function onPointerDown(event) { event.currentTarget.setPointerCapture(event.pointerId); startPoint.current = { x: event.clientX, y: event.clientY } }
   function onPointerMove(event) {
     if (!startPoint.current) return
@@ -50,7 +52,7 @@ export default function StudySession({ list, onExit, onResult }) {
           <span className="glare" />
         </button>
       </div>
-      <p className="gesture-hint">Parmağını kartın üzerinde gezdir ✦</p>
+      <p className="gesture-hint">Parmağını kartın üzerinde gezdir ✦</p>{canSpeak && <button className="speak-button card-speak" onClick={speak}>🔊 Kelimeyi dinle</button>}
       <div className="memory-controls"><button className="again-button" onClick={() => answer('again')}>↻ Tekrar sor</button><button className="know-button" onClick={() => answer('known')}>Biliyorum ✓</button></div>
     </section>
     <nav className="study-controls"><button onClick={() => goToCard(-1)}>← <span>Önceki</span></button><button onClick={() => goToCard(1)}><span>Sıradaki</span> →</button></nav>

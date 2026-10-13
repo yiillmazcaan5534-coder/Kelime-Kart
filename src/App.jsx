@@ -7,7 +7,9 @@ import './StudyMode.css'
 import './CreateOptions.css'
 import StudySession from './StudySession'
 import SpellingSession from './SpellingSession'
+import MidtermDetail from './MidtermDetail'
 import { a1WordLists } from './a1WordLists'
+import { midtermList } from './midtermWords'
 import { getMasteredCount, getWordKey, loadProgress, saveProgress, updateWordProgress } from './progress'
 
 const starterLists = [
@@ -24,6 +26,7 @@ const starterLists = [
     { english: 'together', pronunciation: 'tıgedır', turkish: 'birlikte' },
   ] },
   ...a1WordLists,
+  midtermList,
 ]
 
 function loadLists() {
@@ -38,6 +41,7 @@ function App() {
   const [lists, setLists] = useState(loadLists)
   const [activeListId, setActiveListId] = useState(null)
   const [studyMode, setStudyMode] = useState(null)
+  const [sessionList, setSessionList] = useState(null)
   const [isCreatingList, setIsCreatingList] = useState(false)
   const [listName, setListName] = useState('')
   const [newListShuffle, setNewListShuffle] = useState(false)
@@ -58,16 +62,20 @@ function App() {
     return { id: 'daily-review', title: 'Bugünkü tekrar', accent: 'green', shuffle: true, words }
   }, [lists, progress])
   const activeList = activeListId === 'daily-review' ? dailyReviewList : lists.find((list) => list.id === activeListId)
+  const listForStudy = sessionList || activeList
 
   function addList(event) { event.preventDefault(); const title = listName.trim(); if (!title) return; setLists((current) => [...current, { id: crypto.randomUUID(), title, accent: 'green', shuffle: newListShuffle, words: [] }]); setListName(''); setNewListShuffle(false); setIsCreatingList(false) }
   function addWord(event) { event.preventDefault(); if (!english.trim() || !turkish.trim()) return; setLists((current) => current.map((list) => list.id === activeListId ? { ...list, words: [...list.words, { english: english.trim(), pronunciation: pronunciation.trim(), turkish: turkish.trim() }] } : list)); setEnglish(''); setPronunciation(''); setTurkish(''); requestAnimationFrame(() => englishInput.current?.focus()) }
   function deleteList() { if (!window.confirm(`“${activeList.title}” listesini silmek istediğine emin misin?`)) return; setLists((current) => current.filter((list) => list.id !== activeListId)); setActiveListId(null) }
   function toggleShuffle() { setLists((current) => current.map((list) => list.id === activeListId ? { ...list, shuffle: !list.shuffle } : list)) }
   function recordResult(word, result) { setProgress((current) => updateWordProgress(current, activeList.id, word, result)) }
+  function endStudy() { setStudyMode(null); setSessionList(null) }
+  function startMidtermStudy(mode, list) { setSessionList(list); setStudyMode(mode) }
 
-  if (studyMode === 'flashcards' && activeList) return <StudySession list={activeList} onExit={() => setStudyMode(null)} onResult={recordResult} />
-  if (studyMode === 'spelling' && activeList) return <SpellingSession list={activeList} onExit={() => setStudyMode(null)} onResult={recordResult} />
-  if (studyMode === 'reverse-spelling' && activeList) return <SpellingSession list={activeList} onExit={() => setStudyMode(null)} onResult={recordResult} direction="en-to-tr" />
+  if (studyMode === 'flashcards' && listForStudy) return <StudySession list={listForStudy} onExit={endStudy} onResult={recordResult} />
+  if (studyMode === 'spelling' && listForStudy) return <SpellingSession list={listForStudy} onExit={endStudy} onResult={recordResult} />
+  if (studyMode === 'reverse-spelling' && listForStudy) return <SpellingSession list={listForStudy} onExit={endStudy} onResult={recordResult} direction="en-to-tr" />
+  if (activeList?.isMidterm) return <MidtermDetail list={activeList} progress={progress} onBack={() => setActiveListId(null)} onStart={startMidtermStudy} />
   if (activeList) return <main className="app-shell detail-shell"><header className="topbar detail-topbar"><button className="icon-button" onClick={() => setActiveListId(null)} aria-label="Listelere dön">←</button><span>KelimeKart</span><button className="icon-button danger" onClick={deleteList} aria-label="Listeyi sil">⌫</button></header><section className="detail-heading"><p className="eyebrow">KELİME LİSTESİ</p><h1>{activeList.title}</h1><p className="description">Kelime ve kalıplarını satır satır ekle.</p><button className="text-button" onClick={toggleShuffle}>↻ Karışık sıra: {activeList.shuffle ? 'Açık' : 'Kapalı'}</button></section><section className="words-area"><div className="words-list editable-list"><div className="word-row word-head"><span>#</span><b>İNGİLİZCE</b><b>TELAFFUZ</b><b>TÜRKÇE</b></div>{activeList.words.map((word, index) => <div className="word-row" key={`${word.english}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span><strong>{word.english}</strong><small>{word.pronunciation || '—'}</small><em>{word.turkish}</em></div>)}<form className="word-input-row" onSubmit={addWord} onKeyDown={(event) => { if (event.key === 'Enter' && event.target === turkishInput.current) { event.preventDefault(); event.currentTarget.requestSubmit() } }}><span>+</span><input ref={englishInput} value={english} onChange={(event) => setEnglish(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); turkishInput.current?.focus() } }} placeholder="İngilizce" enterKeyHint="next" /><input value={pronunciation} onChange={(event) => setPronunciation(event.target.value)} placeholder="Telaffuz (ops.)" /><input ref={turkishInput} value={turkish} onChange={(event) => setTurkish(event.target.value)} placeholder="Türkçe" enterKeyHint="done" /></form></div><p className="entry-help">İngilizceyi yazıp Enter’a bas. Türkçesini yazıp tekrar Enter’a basınca yeni satıra geçersin. Telaffuz alanı isteğe bağlıdır.</p></section>{activeList.words.length > 0 && <button className="study-button" onClick={() => setStudyMode('picker')}>Çalışmaya başla <span>→</span></button>}{studyMode === 'picker' && <StudyModePicker onSelect={setStudyMode} onClose={() => setStudyMode(null)} />}</main>
 
   return <main className="app-shell"><header className="topbar"><div className="brand-mark">K</div><span>KelimeKart</span></header><section className="welcome"><p className="eyebrow">KELİME LİSTELERİM</p><h1>Kelime<br />kartlarım.</h1><p className="description">Bir liste seç, kartlarını çevir ve çalış.</p></section>{dailyReviewList.words.length > 0 && <section className="review-section"><button className="review-card" onClick={() => setActiveListId('daily-review')}><span>BUGÜNÜN TEKRARI</span><strong>{dailyReviewList.words.length} kelime seni bekliyor</strong><b>Başla →</b></button></section>}<section className="list-section"><div className="section-heading"><span>{lists.length} liste</span><button className="text-button" onClick={() => setIsCreatingList(true)}>Yeni liste</button></div><div className="list-grid">{lists.map((list) => <button className={`list-card ${list.accent}`} key={list.id} onClick={() => setActiveListId(list.id)}><span className="card-glow" /><span className="list-card-top"><span className="mini-dot" /> Liste</span><strong>{list.title}</strong><span className="list-subtitle">{getMasteredCount(list, progress)} kelime oturdu</span><span className="word-count">{list.words.length} kart <span>→</span></span></button>)}</div></section><button className="add-button" aria-label="Yeni kelime listesi ekle" onClick={() => setIsCreatingList(true)}>+</button>{isCreatingList && <Modal onClose={() => setIsCreatingList(false)}><form className="create-modal" onSubmit={addList}><button type="button" className="close-button" onClick={() => setIsCreatingList(false)}>×</button><p className="eyebrow">YENİ LİSTE</p><h2>Listene bir isim ver.</h2><input autoFocus value={listName} onChange={(event) => setListName(event.target.value)} placeholder="Örn. Unit 4 Kelimeleri" /><label><input type="checkbox" checked={newListShuffle} onChange={(event) => setNewListShuffle(event.target.checked)} /> Kelimeleri karışık sırayla sor</label><button className="save-button" type="submit">Listeyi oluştur</button></form></Modal>}</main>
