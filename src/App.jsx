@@ -64,12 +64,16 @@ function App() {
   const reorderTimer = useRef(null)
   const draggingListId = useRef(null)
   const justReordered = useRef(false)
+  const dragPointer = useRef(null)
+  const autoScrollDirection = useRef(0)
+  const autoScrollFrame = useRef(null)
   const [draggingId, setDraggingId] = useState(null)
   const [exitHint, setExitHint] = useState(false)
   const lastBackPress = useRef(0)
   useEffect(() => localStorage.setItem('kelimekart-lists', JSON.stringify(lists)), [lists])
   useEffect(() => saveProgress(progress), [progress])
   useEffect(() => localStorage.setItem(favoritesKey, JSON.stringify(favorites)), [favorites])
+  useEffect(() => { const stopNativeScrollWhileDragging = (event) => { if (draggingListId.current) event.preventDefault() }; window.addEventListener('touchmove', stopNativeScrollWhileDragging, { passive: false }); return () => window.removeEventListener('touchmove', stopNativeScrollWhileDragging) }, [])
   useEffect(() => {
     let listener
     const register = async () => {
@@ -107,9 +111,11 @@ function App() {
   function toggleShuffle() { setLists((current) => current.map((list) => list.id === activeListId ? { ...list, shuffle: !list.shuffle } : list)) }
   function recordResult(word, result) { setProgress((current) => updateWordProgress(current, activeList.id, word, result)) }
   function toggleFavorite(word) { const key = getWordKey(word.reviewListId || activeList.id, word); setFavorites((current) => ({ ...current, [key]: !current[key] })) }
-  function beginReorder(event, id) { reorderTimer.current = window.setTimeout(() => { justReordered.current = true; draggingListId.current = id; setDraggingId(id); navigator.vibrate?.(18) }, 360) }
-  function moveReorder(event) { const movingId = draggingListId.current; if (!movingId) return; const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('[data-list-id]')?.dataset.listId; if (!target || target === movingId) return; setLists((current) => { const from = current.findIndex((item) => item.id === movingId); const to = current.findIndex((item) => item.id === target); if (from < 0 || to < 0) return current; const next = [...current]; next.splice(to, 0, next.splice(from, 1)[0]); return next }) }
-  function endReorder() { window.clearTimeout(reorderTimer.current); draggingListId.current = null; setDraggingId(null); window.setTimeout(() => { justReordered.current = false }, 0) }
+  function moveDraggedList() { const movingId = draggingListId.current; const point = dragPointer.current; if (!movingId || !point) return; const target = document.elementFromPoint(point.x, point.y)?.closest('[data-list-id]')?.dataset.listId; if (!target || target === movingId) return; setLists((current) => { const from = current.findIndex((item) => item.id === movingId); const to = current.findIndex((item) => item.id === target); if (from < 0 || to < 0) return current; const next = [...current]; next.splice(to, 0, next.splice(from, 1)[0]); return next }) }
+  function runAutoScroll() { if (!draggingListId.current || !autoScrollDirection.current) { autoScrollFrame.current = null; return } window.scrollBy({ top: autoScrollDirection.current * 12, behavior: 'auto' }); moveDraggedList(); autoScrollFrame.current = window.requestAnimationFrame(runAutoScroll) }
+  function beginReorder(event, id) { reorderTimer.current = window.setTimeout(() => { justReordered.current = true; draggingListId.current = id; setDraggingId(id); navigator.vibrate?.(18) }, 1200) }
+  function moveReorder(event) { if (!draggingListId.current) return; dragPointer.current = { x: event.clientX, y: event.clientY }; moveDraggedList(); const edge = 115; const direction = event.clientY < edge ? -1 : event.clientY > window.innerHeight - edge ? 1 : 0; autoScrollDirection.current = direction; if (direction && !autoScrollFrame.current) autoScrollFrame.current = window.requestAnimationFrame(runAutoScroll) }
+  function endReorder() { window.clearTimeout(reorderTimer.current); draggingListId.current = null; dragPointer.current = null; autoScrollDirection.current = 0; if (autoScrollFrame.current) window.cancelAnimationFrame(autoScrollFrame.current); autoScrollFrame.current = null; setDraggingId(null); window.setTimeout(() => { justReordered.current = false }, 0) }
   function endStudy() { setStudyMode(null); setSessionList(null) }
   function startMidtermStudy(mode, list) { setSessionList(list); setStudyMode(mode) }
 

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import './StudySession.css'
+import { canSpeak, speakEnglish } from './speech'
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
@@ -12,7 +13,7 @@ export default function StudySession({ list, onExit, onResult, isFavorite, onTog
   const [motion, setMotion] = useState({ x: 0, y: 0, glareX: 50, glareY: 50 })
   const startPoint = useRef(null)
   const card = cards[cardIndex]
-  const canSpeak = typeof window !== 'undefined' && 'speechSynthesis' in window
+  const speechAvailable = canSpeak()
 
   function resetCard() { setIsFlipped(false); setMotion({ x: 0, y: 0, glareX: 50, glareY: 50 }) }
   function goToCard(direction) { setCardIndex((current) => (current + direction + cards.length) % cards.length); resetCard() }
@@ -23,7 +24,7 @@ export default function StudySession({ list, onExit, onResult, isFavorite, onTog
     if (nextRetries.length) { setCards(nextRetries); setRetryCards([]); setCardIndex(0); setRound((current) => current + 1); resetCard(); return }
     setCards([])
   }
-  function speak() { if (!canSpeak) return; window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(card.english); utterance.lang = 'en-GB'; utterance.rate = .82; window.speechSynthesis.speak(utterance) }
+  function speak() { speakEnglish(card.english).catch(() => {}) }
   function onPointerDown(event) { event.currentTarget.setPointerCapture(event.pointerId); startPoint.current = { x: event.clientX, y: event.clientY } }
   function onPointerMove(event) {
     if (!startPoint.current) return
@@ -52,7 +53,7 @@ export default function StudySession({ list, onExit, onResult, isFavorite, onTog
           <span className="glare" />
         </button>
       </div>
-      <p className="gesture-hint">Parmağını kartın üzerinde gezdir ✦</p><div className="card-actions">{canSpeak && <button className="speak-button card-speak" onClick={speak}>🔊 Kelimeyi dinle</button>}{onToggleFavorite && <button className={`favorite-toggle ${isFavorite?.(card) ? 'is-favorite' : ''}`} onClick={() => onToggleFavorite(card)}>{isFavorite?.(card) ? '★ Zor kelime' : '☆ Zor kelime'}</button>}</div>
+      <p className="gesture-hint">Parmağını kartın üzerinde gezdir ✦</p><div className="card-actions">{speechAvailable && <button className="speak-button card-speak" onClick={speak}>🔊 Kelimeyi dinle</button>}{onToggleFavorite && <button className={`favorite-toggle ${isFavorite?.(card) ? 'is-favorite' : ''}`} onClick={() => onToggleFavorite(card)}>{isFavorite?.(card) ? '★ Zor kelime' : '☆ Zor kelime'}</button>}</div>
       <div className="memory-controls"><button className="again-button" onClick={() => answer('again')}>↻ Tekrar sor</button><button className="know-button" onClick={() => answer('known')}>Biliyorum ✓</button></div>
     </section>
     <nav className="study-controls"><button onClick={() => goToCard(-1)}>← <span>Önceki</span></button><button onClick={() => goToCard(1)}><span>Sıradaki</span> →</button></nav>
