@@ -3,7 +3,7 @@ import './StudySession.css'
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
-export default function StudySession({ list, onExit, onResult }) {
+export default function StudySession({ list, onExit, onResult, isFavorite, onToggleFavorite }) {
   const [cards, setCards] = useState(() => list.shuffle ? [...list.words].sort(() => Math.random() - .5) : [...list.words])
   const [cardIndex, setCardIndex] = useState(0)
   const [retryCards, setRetryCards] = useState([])
@@ -52,7 +52,7 @@ export default function StudySession({ list, onExit, onResult }) {
           <span className="glare" />
         </button>
       </div>
-      <p className="gesture-hint">Parmağını kartın üzerinde gezdir ✦</p>{canSpeak && <button className="speak-button card-speak" onClick={speak}>🔊 Kelimeyi dinle</button>}
+      <p className="gesture-hint">Parmağını kartın üzerinde gezdir ✦</p><div className="card-actions">{canSpeak && <button className="speak-button card-speak" onClick={speak}>🔊 Kelimeyi dinle</button>}{onToggleFavorite && <button className={`favorite-toggle ${isFavorite?.(card) ? 'is-favorite' : ''}`} onClick={() => onToggleFavorite(card)}>{isFavorite?.(card) ? '★ Zor kelime' : '☆ Zor kelime'}</button>}</div>
       <div className="memory-controls"><button className="again-button" onClick={() => answer('again')}>↻ Tekrar sor</button><button className="know-button" onClick={() => answer('known')}>Biliyorum ✓</button></div>
     </section>
     <nav className="study-controls"><button onClick={() => goToCard(-1)}>← <span>Önceki</span></button><button onClick={() => goToCard(1)}><span>Sıradaki</span> →</button></nav>

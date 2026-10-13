@@ -16,11 +16,11 @@ export function updateWordProgress(current, listId, word, result) {
   const key = getWordKey(word.reviewListId || listId, word)
   const previous = current[key] || { streak: 0, correct: 0, wrong: 0, nextReviewAt: null }
   const now = Date.now()
-  if (result === 'again') return { ...current, [key]: { ...previous, streak: 0, wrong: previous.wrong + 1, nextReviewAt: now + 86400000 } }
+  if (result === 'again') return { ...current, [key]: { ...previous, streak: 0, wrong: previous.wrong + 1, nextReviewAt: now + 86400000, lastStudiedAt: now } }
 
   const streak = previous.streak + 1
   const days = streak === 1 ? 1 : streak === 2 ? 3 : streak === 3 ? 7 : 14
-  return { ...current, [key]: { ...previous, streak, correct: previous.correct + 1, nextReviewAt: now + days * 86400000 } }
+  return { ...current, [key]: { ...previous, streak, correct: previous.correct + 1, nextReviewAt: now + days * 86400000, lastStudiedAt: now } }
 }
 
 export function getMasteredCount(list, progress) {
