@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { App as NativeApp } from '@capacitor/app'
 import './App.css'
 import './Detail.css'
 import './StudyButton.css'
@@ -62,9 +63,28 @@ function App() {
   const draggingListId = useRef(null)
   const justReordered = useRef(false)
   const [draggingId, setDraggingId] = useState(null)
+  const [exitHint, setExitHint] = useState(false)
+  const lastBackPress = useRef(0)
   useEffect(() => localStorage.setItem('kelimekart-lists', JSON.stringify(lists)), [lists])
   useEffect(() => saveProgress(progress), [progress])
   useEffect(() => localStorage.setItem(favoritesKey, JSON.stringify(favorites)), [favorites])
+  useEffect(() => {
+    let listener
+    const register = async () => {
+      listener = await NativeApp.addListener('backButton', () => {
+        if (studyMode) { setStudyMode(null); setSessionList(null); return }
+        if (isCreatingList) { setIsCreatingList(false); return }
+        if (activeListId) { setActiveListId(null); return }
+        const now = Date.now()
+        if (now - lastBackPress.current < 1800) { NativeApp.exitApp(); return }
+        lastBackPress.current = now
+        setExitHint(true)
+        window.setTimeout(() => setExitHint(false), 1800)
+      })
+    }
+    register()
+    return () => listener?.remove()
+  }, [activeListId, isCreatingList, studyMode])
   const dailyReviewList = useMemo(() => {
     const now = Date.now()
     const words = lists.flatMap((list) => list.words.filter((word) => {
@@ -108,6 +128,7 @@ function App() {
 
   return <main className="app-shell">
     <header className="topbar"><div className="brand-mark">K</div><span>KelimeKart</span></header>
+    {exitHint && <div className="exit-hint">Çıkmak için geri tuşuna tekrar bas</div>}
     <section className="welcome"><p className="eyebrow">KELİME LİSTELERİM</p><h1>Kelime<br />kartlarım.</h1><p className="description">Bir liste seç, kartlarını çevir ve çalış.</p></section>
     <section className="daily-goal"><span>BUGÜNKÜ HEDEF</span><strong>{Math.min(studiedToday, 15)} <i>/ 15 kelime</i></strong><div><b style={{ width: `${Math.min(studiedToday / 15 * 100, 100)}%` }} /></div><small>{studiedToday >= 15 ? 'Bugünkü hedef tamam, kral! ✦' : `${15 - studiedToday} kelime daha, hedef biter.`}</small></section>
     {dailyReviewList.words.length > 0 && <section className="review-section"><button className="review-card" onClick={() => setActiveListId('daily-review')}><span>BUGÜNÜN TEKRARI</span><strong>{dailyReviewList.words.length} kelime seni bekliyor</strong><b>Başla →</b></button></section>}
